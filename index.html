@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Calculator</title>
+    <style>
+        body {
+            background-color: #f8f0ff;
+            font-family: 'Comic Sans MS', sans-serif;
+            color: #5a189a;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+
+        h1 {
+            color: #7209b7;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .input-group input[type="range"], 
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 2px solid #c77dff;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .input-group output {
+            display: block;
+            margin-top: 5px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #c77dff;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #b5179e;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 2px solid #f1d1ff;
+            text-align: center;
+        }
+
+        th {
+            background-color: #b5179e;
+            color: white;
+        }
+
+        td {
+            background-color: #f9c0ff;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Investment Calculator</h1>
+
+        <div class="input-group">
+            <label for="lumpsum">Lumpsum Amount (₹):</label>
+            <input type="range" id="lumpsumSlider" min="10000" max="100000000" step="1000" value="30000000" oninput="syncInput('lumpsumSlider', 'lumpsumInput')">
+            <input type="number" id="lumpsumInput" value="30000000" oninput="syncSlider('lumpsumInput', 'lumpsumSlider')">
+            <output id="lumpsumOutput">₹ 100,000</output>
+        </div>
+
+        <div class="input-group">
+            <label for="interestRate">Interest Rate (% per annum):</label>
+            <input type="range" id="interestRateSlider" min="0" max="25" step="0.1" value="14" oninput="syncInput('interestRateSlider', 'interestRateInput')">
+            <input type="number" id="interestRateInput" value="14" step="0.1" oninput="syncSlider('interestRateInput', 'interestRateSlider')">
+            <output id="interestRateOutput">5%</output>
+        </div>
+
+        <div class="input-group">
+            <label for="duration">Duration (Years):</label>
+            <input type="range" id="durationSlider" min="1" max="30" value="20" oninput="syncInput('durationSlider', 'durationInput')">
+            <input type="number" id="durationInput" value="20" min="1" max="30" oninput="syncSlider('durationInput', 'durationSlider')">
+            <output id="durationOutput">10 Years</output>
+        </div>
+
+        <div class="input-group">
+            <label for="withdrawal">Monthly Withdrawal (₹):</label>
+            <input type="range" id="withdrawalSlider" min="0" max="500000" step="1000" value="100000" oninput="syncInput('withdrawalSlider', 'withdrawalInput')">
+            <input type="number" id="withdrawalInput" value="100000" oninput="syncSlider('withdrawalInput', 'withdrawalSlider')">
+            <output id="withdrawalOutput">₹ 10,000</output>
+        </div>
+
+        <div class="input-group">
+            <label for="inflationRate">Inflation Rate (% per annum):</label>
+            <input type="range" id="inflationRateSlider" min="0" max="15" step="0.1" value="6" oninput="syncInput('inflationRateSlider', 'inflationRateInput')">
+            <input type="number" id="inflationRateInput" value="6" step="0.1" oninput="syncSlider('inflationRateInput', 'inflationRateSlider')">
+            <output id="inflationRateOutput">3%</output>
+        </div>
+
+        <button onclick="calculate()">Calculate</button>
+
+        <div class="result-container">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Initial Amount</th>
+                        <th>Withdrawn Amount</th>
+                         <th>Withdrawn Amount Monthly</th>
+                        <th>Final Amount</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Function to format numbers with commas
+        function formatNumber(num) {
+            return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        }
+
+        // Synchronize range slider and number input fields
+        function syncInput(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            input.value = slider.value;
+            updateOutputs();
+        }
+
+        function syncSlider(inputId, sliderId) {
+            const input = document.getElementById(inputId);
+            const slider = document.getElementById(sliderId);
+            slider.value = input.value;
+            updateOutputs();
+        }
+
+        // Update outputs for all sliders
+        function updateOutputs() {
+            const lumpsum = parseFloat(document.getElementById('lumpsumSlider').value);
+            const interestRate = parseFloat(document.getElementById('interestRateSlider').value);
+            const duration = parseInt(document.getElementById('durationSlider').value);
+            const withdrawal = parseFloat(document.getElementById('withdrawalSlider').value);
+            const inflationRate = parseFloat(document.getElementById('inflationRateSlider').value);
+
+            document.getElementById('lumpsumOutput').textContent = '₹ ' + formatNumber(lumpsum);
+            document.getElementById('interestRateOutput').textContent = interestRate + '%';
+            document.getElementById('durationOutput').textContent = duration + ' Years';
+            document.getElementById('withdrawalOutput').textContent = '₹ ' + formatNumber(withdrawal);
+            document.getElementById('inflationRateOutput').textContent = inflationRate + '%';
+        }
+
+        // Calculation function
+        function calculate() {
+            const lumpsum = parseFloat(document.getElementById('lumpsumSlider').value);
+            const annualInterestRate = parseFloat(document.getElementById('interestRateSlider').value);
+            const interestRate = annualInterestRate / 100 / 12; // Convert to monthly
+            const duration = parseInt(document.getElementById('durationSlider').value);
+            const monthlyWithdrawal = parseFloat(document.getElementById('withdrawalSlider').value);
+            const inflationRate = parseFloat(document.getElementById('inflationRateSlider').value) / 100; // Convert to decimal
+            const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+
+            // Clear previous results
+            resultsTable.innerHTML = '';
+
+            if (isNaN(lumpsum) || isNaN(interestRate) || isNaN(duration) || lumpsum < 0 || interestRate < 0 || duration <= 0 || isNaN(monthlyWithdrawal) || isNaN(inflationRate)) {
+                alert('Please enter valid values.');
+                return;
+            }
+
+            // Calculate and display the future value for each year
+            let futureValue = lumpsum;
+            let currentWithdrawal = monthlyWithdrawal;
+
+            for (let year = 1; year <= duration; year++) {
+                let initialAmount = futureValue;
+
+                // Withdraw monthly and calculate interest
+                for (let month = 1; month <= 12; month++) {
+                    // Deduct monthly withdrawal
+                    futureValue -= currentWithdrawal;
+
+                    // If future value falls below zero, reset to zero
+                    if (futureValue < 0) {
+                        futureValue = 0;
+                        currentWithdrawal = 0; // Stop further withdrawals
+                        break;
+                    }
+
+                    // Add monthly interest
+                    futureValue = futureValue * (1 + interestRate);
+                }
+
+                // Adjust withdrawal amount for inflation
+                currentWithdrawal *= (1 + inflationRate);
+
+                // Calculate final amount after withdrawals
+                const row = resultsTable.insertRow();
+                const cellYear = row.insertCell(0);
+                const cellInitialAmount = row.insertCell(1);
+                const cellWithdrawnAmount = row.insertCell(2);
+                 const cellWithdrawnAmountMonthly = row.insertCell(3);
+                const cellFinalAmount = row.insertCell(4);
+
+                cellYear.innerHTML = year;
+                cellInitialAmount.innerHTML = '₹ ' + formatNumber(initialAmount);
+                cellWithdrawnAmount.innerHTML = '₹ ' + formatNumber(currentWithdrawal*12 );
+                cellWithdrawnAmountMonthly.innerHTML = '₹ ' + formatNumber(currentWithdrawal );
+                cellFinalAmount.innerHTML = '₹ ' + formatNumber(futureValue);
+            }
+        }
+
+        // Initial update of outputs
+        updateOutputs();
+    </script>
+</body>
+</html>
